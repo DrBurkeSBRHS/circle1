@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Defining the Circle: Beyond 'Round'</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background-color: #f8fafc;
+            color: #1e293b;
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            overflow-x: hidden;
+        }
+        .canvas-container {
+            position: relative;
+            background: white;
+            border-radius: 1rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            cursor: crosshair;
+            touch-action: none;
+        }
+        .control-panel {
+            background: white;
+            border-radius: 1rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        .is-circle {
+            background-color: #ecfdf5;
+            border: 2px solid #10b981;
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+
+    <header class="max-w-4xl mx-auto mb-8 text-center">
+        <h1 class="text-3xl md:text-4xl font-black text-slate-900 mb-2">Defining the Circle</h1>
+        <p class="text-slate-600">Is it just "round," or is there a specific geometric rule?</p>
+    </header>
+
+    <main class="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8">
+        
+        <!-- Controls & Legend -->
+        <aside class="space-y-6">
+            <div class="control-panel p-6">
+                <h2 class="text-sm font-bold uppercase tracking-wider text-slate-500 mb-4">Select Geometry</h2>
+                <div class="flex flex-col gap-3">
+                    <button onclick="setShape('ellipse')" id="btn-ellipse" class="shape-btn px-4 py-3 rounded-lg border-2 border-indigo-600 bg-indigo-50 text-indigo-700 font-bold text-left flex justify-between items-center">
+                        Ellipse / Circle
+                        <span class="text-[10px] bg-indigo-200 px-2 py-1 rounded">Draggable Focus</span>
+                    </button>
+                    <button onclick="setShape('oval')" id="btn-oval" class="shape-btn px-4 py-3 rounded-lg border-2 border-slate-200 text-slate-600 font-bold text-left flex justify-between items-center">
+                        Stadium Oval
+                        <span class="text-[10px] bg-slate-200 px-2 py-1 rounded">Composite Curve</span>
+                    </button>
+                </div>
+            </div>
+
+            <div id="status-box" class="control-panel p-6 transition-colors duration-500">
+                <h2 id="shape-title" class="text-xl font-bold mb-2">Analyzing Shape...</h2>
+                <p id="shape-desc" class="text-sm text-slate-600 leading-relaxed mb-4">
+                    Move the edge point to see the distance from the center.
+                </p>
+                <div class="space-y-2">
+                    <div class="flex justify-between items-center text-sm">
+                        <span class="text-slate-500">Distance from Center:</span>
+                        <span id="dist-val" class="font-mono font-bold text-indigo-600 text-lg">0.00</span>
+                    </div>
+                    <div id="constancy-meter" class="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+                        <div id="constancy-fill" class="h-full bg-indigo-500 transition-all duration-300" style="width: 0%"></div>
+                    </div>
+                    <p id="constancy-text" class="text-[10px] text-slate-400 uppercase font-bold text-center pt-1">Distance is Variable</p>
+                </div>
+            </div>
+
+            <div class="p-4 bg-amber-50 border border-amber-100 rounded-xl">
+                <h3 class="text-amber-800 font-bold text-sm mb-1">Teacher's Challenge:</h3>
+                <p class="text-amber-700 text-xs leading-relaxed">
+                    Drag Focus 2 (F2) until it sits exactly on top of the fixed Focus 1 (F1). What happens to the "distance from center" as you rotate the edge point then?
+                </p>
+            </div>
+        </aside>
+
+        <!-- Main Workspace -->
+        <section class="lg:col-span-2">
+            <div class="canvas-container" id="container">
+                <canvas id="mainCanvas"></canvas>
+            </div>
+            <div class="mt-4 flex justify-between items-center text-[11px] text-slate-400 font-medium px-2">
+                <span>DRAG F2 OR HANDLES TO CHANGE SHAPE</span>
+                <span>DRAG RED EDGE POINT TO MEASURE</span>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        const canvas = document.getElementById('mainCanvas');
+        const ctx = canvas.getContext('2d');
+        const container = document.getElementById('container');
+        
+        let shape = 'ellipse'; 
+        let width, height, centerX, centerY;
+        
+        // State for Ellipse
+        // Focus 1 is fixed at the origin of the shape for simpler logic
+        let focus1 = { x: -60, y: 0 };
+        let focus2 = { x: 60, y: 0 };
+        let edgeAngle = 0;
+        let majorAxis = 160;
+
+        // State for Oval (Stadium shape)
+        let ovalRect = { w: 200, h: 120 };
+
+        let dragTarget = null;
+
+        function init() {
+            width = container.clientWidth;
+            height = Math.max(width * 0.6, 400);
+            canvas.width = width;
+            canvas.height = height;
+            centerX = width / 2;
+            centerY = height / 2;
+            draw();
+        }
+
+        function setShape(type) {
+            shape = type;
+            document.querySelectorAll('.shape-btn').forEach(b => {
+                b.classList.remove('border-indigo-600', 'bg-indigo-50', 'text-indigo-700');
+                b.classList.add('border-slate-200', 'text-slate-600');
+            });
+            const active = document.getElementById('btn-' + type);
+            active.classList.add('border-indigo-600', 'bg-indigo-50', 'text-indigo-700');
+            active.classList.remove('border-slate-200', 'text-slate-600');
+            draw();
+        }
+
+        function getMousePos(e) {
+            const rect = canvas.getBoundingClientRect();
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            return {
+                x: clientX - rect.left - centerX,
+                y: clientY - rect.top - centerY
+            };
+        }
+
+        canvas.onmousedown = canvas.ontouchstart = (e) => {
+            const pos = getMousePos(e);
+            
+            if (shape === 'ellipse') {
+                const c = (focus2.x - focus1.x) / 2;
+                const centerOffsetX = focus1.x + c;
+                const a = majorAxis;
+                const b = Math.sqrt(Math.max(0, a*a - c*c));
+                
+                // Edge point handle position
+                const ex = centerOffsetX + a * Math.cos(edgeAngle);
+                const ey = b * Math.sin(edgeAngle);
+                
+                const d2 = Math.hypot(pos.x - focus2.x, pos.y - focus2.y);
+                const de = Math.hypot(pos.x - ex, pos.y - ey);
+
+                // Priority to edge point to ensure it's always draggable
+                if (de < 30) dragTarget = 'edge';
+                else if (d2 < 20) dragTarget = 'f2';
+            } else {
+                const w = ovalRect.w;
+                const h = ovalRect.h;
+                const {x: ex, y: ey} = getStadiumPoint(edgeAngle, w, h);
+                
+                const de = Math.hypot(pos.x - ex, pos.y - ey);
+                const dw = Math.hypot(pos.x - w/2, pos.y);
+                const dh = Math.hypot(pos.x, pos.y - h/2);
+
+                if (de < 30) dragTarget = 'edge';
+                else if (dw < 20) dragTarget = 'width';
+                else if (dh < 20) dragTarget = 'height';
+            }
+        };
+
+        window.onmousemove = window.ontouchmove = (e) => {
+            if (!dragTarget) return;
+            const pos = getMousePos(e);
+
+            if (dragTarget === 'f2') {
+                // Focus 2 can be dragged. Focus 1 remains at -60.
+                focus2.x = Math.max(focus1.x, Math.min(150, pos.x));
+            }
+            else if (dragTarget === 'edge') {
+                if (shape === 'ellipse') {
+                    const c = (focus2.x - focus1.x) / 2;
+                    const centerOffsetX = focus1.x + c;
+                    edgeAngle = Math.atan2(pos.y, pos.x - centerOffsetX);
+                } else {
+                    edgeAngle = Math.atan2(pos.y, pos.x);
+                }
+            }
+            else if (dragTarget === 'width') ovalRect.w = Math.max(40, pos.x * 2);
+            else if (dragTarget === 'height') ovalRect.h = Math.max(40, pos.y * 2);
+
+            draw();
+            if (e.cancelable) e.preventDefault();
+        };
+
+        window.onmouseup = window.ontouchend = () => { dragTarget = null; };
+
+        function getStadiumPoint(angle, w, h) {
+            const r = h / 2;
+            const s = Math.max(0, w - h) / 2;
+            const x_raw = Math.cos(angle);
+            const y_raw = Math.sin(angle);
+            
+            if (Math.abs(x_raw) * (r + s) < s) {
+                const distToEdge = r / Math.abs(y_raw);
+                return { x: x_raw * distToEdge, y: y_raw * distToEdge };
+            } else {
+                const s_sign = x_raw > 0 ? 1 : -1;
+                const cur_s = s_sign * s;
+                const b = -2 * cur_s * x_raw;
+                const c = cur_s * cur_s - r * r;
+                const det = b * b - 4 * c;
+                const k = (-b + Math.sqrt(Math.max(0, det))) / 2;
+                return { x: k * x_raw, y: k * y_raw };
+            }
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.save();
+            ctx.translate(centerX, centerY);
+
+            if (shape === 'ellipse') {
+                drawEllipse();
+            } else {
+                drawOval();
+            }
+
+            ctx.restore();
+        }
+
+        function drawEllipse() {
+            const c = (focus2.x - focus1.x) / 2;
+            const centerOffsetX = focus1.x + c;
+            const a = majorAxis;
+            const b = Math.sqrt(Math.max(0, a*a - c*c));
+            const isCircle = Math.abs(focus2.x - focus1.x) < 3;
+
+            // Draw Ellipse Path
+            ctx.beginPath();
+            ctx.ellipse(centerOffsetX, 0, a, b, 0, 0, Math.PI * 2);
+            ctx.strokeStyle = isCircle ? '#10b981' : '#6366f1';
+            ctx.lineWidth = isCircle ? 4 : 2;
+            ctx.stroke();
+            if (isCircle) {
+                ctx.fillStyle = 'rgba(16, 185, 129, 0.05)';
+                ctx.fill();
+            }
+
+            // Draw Foci
+            ctx.font = "bold 10px Inter";
+            // F1 is Static
+            ctx.fillStyle = '#94a3b8';
+            ctx.beginPath(); ctx.arc(focus1.x, focus1.y, 6, 0, Math.PI*2); ctx.fill();
+            ctx.fillText("F1 (Fixed)", focus1.x - 20, focus1.y + 20);
+
+            // F2 is Draggable
+            ctx.fillStyle = '#6366f1';
+            ctx.beginPath(); ctx.arc(focus2.x, focus2.y, 7, 0, Math.PI*2); ctx.fill();
+            ctx.strokeStyle = 'white'; ctx.lineWidth = 2; ctx.stroke();
+            ctx.fillText("F2 (Drag)", focus2.x - 20, focus2.y - 12);
+
+            // Edge Point Calculation
+            const ex = centerOffsetX + a * Math.cos(edgeAngle);
+            const ey = b * Math.sin(edgeAngle);
+            const dist = Math.hypot(ex - centerOffsetX, ey);
+
+            // Distance Line from Center
+            ctx.setLineDash([5, 5]);
+            ctx.strokeStyle = '#94a3b8';
+            ctx.beginPath();
+            ctx.moveTo(centerOffsetX, 0);
+            ctx.lineTo(ex, ey);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // Center Point
+            ctx.fillStyle = '#1e293b';
+            ctx.beginPath(); ctx.arc(centerOffsetX, 0, 4, 0, Math.PI*2); ctx.fill();
+
+            // Edge Handle
+            ctx.fillStyle = isCircle ? '#10b981' : '#f43f5e';
+            ctx.beginPath(); ctx.arc(ex, ey, 9, 0, Math.PI*2); ctx.fill();
+            ctx.strokeStyle = 'white'; ctx.lineWidth = 2; ctx.stroke();
+
+            updateUI(dist, isCircle);
+        }
+
+        function drawOval() {
+            const w = ovalRect.w;
+            const h = ovalRect.h;
+            const r = h / 2;
+            const s = Math.max(0, w - h) / 2;
+            const isCircle = s < 1;
+
+            ctx.beginPath();
+            ctx.moveTo(-s, -r);
+            ctx.lineTo(s, -r);
+            ctx.arc(s, 0, r, -Math.PI/2, Math.PI/2);
+            ctx.lineTo(-s, r);
+            ctx.arc(-s, 0, r, Math.PI/2, -Math.PI/2);
+            ctx.closePath();
+            ctx.strokeStyle = isCircle ? '#10b981' : '#1e293b';
+            ctx.lineWidth = isCircle ? 4 : 2;
+            ctx.stroke();
+            if (isCircle) {
+                ctx.fillStyle = 'rgba(16, 185, 129, 0.05)';
+                ctx.fill();
+            }
+
+            // Center
+            ctx.fillStyle = '#1e293b';
+            ctx.beginPath(); ctx.arc(0, 0, 4, 0, Math.PI*2); ctx.fill();
+
+            // Handles
+            ctx.fillStyle = '#cbd5e1';
+            ctx.beginPath(); ctx.arc(w/2, 0, 6, 0, Math.PI*2); ctx.fill();
+            ctx.beginPath(); ctx.arc(0, h/2, 6, 0, Math.PI*2); ctx.fill();
+
+            const {x: ex, y: ey} = getStadiumPoint(edgeAngle, w, h);
+            const dist = Math.hypot(ex, ey);
+
+            ctx.setLineDash([5, 5]);
+            ctx.strokeStyle = '#94a3b8';
+            ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(ex, ey); ctx.stroke();
+            ctx.setLineDash([]);
+
+            ctx.fillStyle = isCircle ? '#10b981' : '#f43f5e';
+            ctx.beginPath(); ctx.arc(ex, ey, 9, 0, Math.PI*2); ctx.fill();
+            ctx.strokeStyle = 'white'; ctx.lineWidth = 2; ctx.stroke();
+
+            updateUI(dist, isCircle);
+        }
+
+        function updateUI(dist, isCircle) {
+            const distEl = document.getElementById('dist-val');
+            const statusBox = document.getElementById('status-box');
+            const titleEl = document.getElementById('shape-title');
+            const descEl = document.getElementById('shape-desc');
+            const fill = document.getElementById('constancy-fill');
+            const cText = document.getElementById('constancy-text');
+
+            distEl.innerText = (dist / 10).toFixed(2);
+
+            if (isCircle) {
+                statusBox.className = "control-panel p-6 is-circle transition-all duration-500";
+                titleEl.innerText = "It's a Circle!";
+                descEl.innerText = "Notice that every single point on the edge is exactly the same distance from the center. This uniform distance is the definition of a circle.";
+                fill.style.width = "100%";
+                fill.className = "h-full bg-emerald-500";
+                cText.innerText = "Distance is CONSTANT";
+            } else {
+                statusBox.className = "control-panel p-6 bg-white transition-all duration-500";
+                if (shape === 'ellipse') {
+                    titleEl.innerText = "It's an Ellipse";
+                    descEl.innerText = "While it looks round, the distance from the center changes depending on where you measure.";
+                    fill.style.width = "40%";
+                } else {
+                    titleEl.innerText = "It's an Oval";
+                    descEl.innerText = "This stadium shape has straight sides and curved ends. The radius is not constant.";
+                    fill.style.width = "20%";
+                }
+                fill.className = "h-full bg-indigo-500";
+                cText.innerText = "Distance is Variable";
+            }
+        }
+
+        window.onload = init;
+        window.onresize = init;
+
+    </script>
+</body>
+</html>

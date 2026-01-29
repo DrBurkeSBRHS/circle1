@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reference: The Parametric Circle</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary: #6366f1;
+            --secondary: #14b8a6;
+            --accent: #f43f5e;
+        }
+
+        body {
+            background-color: #f8fafc;
+            color: #1e293b;
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+        }
+
+        .concept-card {
+            background: white;
+            border-radius: 1rem;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+            border-top: 4px solid var(--primary);
+        }
+
+        .triangle-viz {
+            background: #f1f5f9;
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            position: relative;
+        }
+
+        /* Layout for the unified engine */
+        .engine-grid {
+            display: grid;
+            grid-template-columns: 220px 1fr;
+            grid-template-rows: 1fr 220px;
+            gap: 15px;
+            max-width: 950px;
+            margin: 0 auto;
+        }
+
+        .canvas-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+        }
+
+        #circleCanvas {
+            background: white;
+            cursor: crosshair;
+        }
+
+        .label-text {
+            font-size: 10px;
+            font-weight: 800;
+            text-transform: uppercase;
+            color: #64748b;
+            margin-bottom: 8px;
+            display: block;
+            text-align: center;
+        }
+
+        .orientation-note {
+            background: #fffbeb;
+            border: 1px solid #fef3c7;
+            border-radius: 0.5rem;
+            padding: 1rem;
+            margin-bottom: 2rem;
+            font-size: 0.875rem;
+            color: #92400e;
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+
+    <header class="max-w-6xl mx-auto mb-12 border-b pb-8">
+        <h1 class="text-4xl md:text-5xl font-black text-slate-900 mb-4">Geometry in Translation</h1>
+        <p class="text-xl text-slate-600 max-w-3xl">
+            A visual reference for the relationship between circular motion, wave functions, and right-triangle trigonometry.
+        </p>
+    </header>
+
+    <main class="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-12 gap-8">
+
+        <!-- CONCEPT: SPATIAL DIMENSIONS -->
+        <section class="col-span-1 md:col-span-4 space-y-6">
+            <div class="concept-card p-6">
+                <h2 class="text-xl font-bold mb-4 text-slate-800">Quantifying the Room</h2>
+                <div class="space-y-4">
+                    <div class="p-4 bg-indigo-50 rounded-lg border-l-4 border-indigo-500">
+                        <p class="text-sm font-semibold text-indigo-900 mb-1">Conceptual Inquiry:</p>
+                        <p class="text-slate-700 italic">"When we ask 'how big' a circle should be relative to this room, what specific geometric properties are we actually comparing?"</p>
+                    </div>
+                    <p class="text-sm text-slate-600 leading-relaxed">
+                        Consider the different ways to measure a circle's footprint. Is it defined by the distance across, its boundary, or the space it occupies?
+                    </p>
+                </div>
+            </div>
+
+            <div class="concept-card p-6" style="border-top-color: var(--secondary);">
+                <h2 class="text-xl font-bold mb-4 text-slate-800">The Trigonometric Origin</h2>
+                <div class="triangle-viz mb-4">
+                    <svg viewBox="0 0 240 160" class="w-full h-auto overflow-visible">
+                        <path d="M40 120 L180 120 L180 20 Z" fill="none" stroke="#64748b" stroke-width="2" />
+                        <path d="M170 120 L170 110 L180 110" fill="none" stroke="#64748b" stroke-width="1" />
+                        <path d="M70 120 A30 30 0 0 0 62 105" fill="none" stroke="#6366f1" stroke-width="2" />
+                        
+                        <text x="75" y="115" font-size="12" fill="#6366f1" font-weight="bold">θ</text>
+                        <text x="110" y="140" font-size="11" fill="#14b8a6" text-anchor="middle" font-weight="600">Adjacent (Cos)</text>
+                        <text x="185" y="70" font-size="11" fill="#f43f5e" alignment-baseline="middle" font-weight="600">Opposite (Sin)</text>
+                        <text x="80" y="60" font-size="11" fill="#64748b" transform="rotate(-35 80,60)" font-weight="600">Radius</text>
+                    </svg>
+                </div>
+                <div class="space-y-3 text-sm text-slate-600">
+                    <p>Every point on a circle is the tip of a <strong>right triangle</strong>.</p>
+                    <p>The <strong>Opposite</strong> side is the vertical displacement (y), and the <strong>Adjacent</strong> side is the horizontal displacement (x).</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- CONCEPT: THE UNIFIED PARAMETRIC ENGINE -->
+        <section class="col-span-1 md:col-span-8 concept-card p-8">
+            <h2 class="text-2xl font-black text-slate-900 mb-2">The Interactive Engine</h2>
+            
+            <div class="orientation-note">
+                <strong><svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline mr-1 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg> Note on Graph Orientation:</strong>
+                To visualize the parametric connection, the <strong>Cosine graph</strong> (bottom) is rotated 90° so its value axis (x) aligns horizontally with the circle's x-axis. This shows how the "Adjacent" side of the triangle oscillates over time. The Sine graph (left) aligns vertically to show the oscillation of the "Opposite" side.
+            </div>
+
+            <div class="engine-grid">
+                <!-- Top Left: Sine Wave Graph -->
+                <div class="canvas-container">
+                    <span class="label-text">y = sin(θ)</span>
+                    <canvas id="sineCanvas"></canvas>
+                </div>
+
+                <!-- Top Right: Circle Graph -->
+                <div class="canvas-container">
+                    <span class="label-text">Parametric Circle</span>
+                    <canvas id="circleCanvas" class="rounded-xl border border-slate-100 shadow-inner"></canvas>
+                </div>
+
+                <!-- Bottom Left: Empty -->
+                <div></div>
+
+                <!-- Bottom Right: Cosine Wave Graph -->
+                <div class="canvas-container">
+                    <span class="label-text">x = cos(θ)</span>
+                    <canvas id="cosineCanvas"></canvas>
+                </div>
+            </div>
+
+            <!-- Enhanced Data Output -->
+            <div id="dataOutput" class="mt-8 grid grid-cols-1 md:grid-cols-3 gap-4 pt-6 border-t border-slate-100">
+                <div class="bg-indigo-50 p-4 rounded-xl text-center border border-indigo-100">
+                    <span class="block text-[10px] text-indigo-400 font-bold uppercase mb-1">Angle (θ)</span>
+                    <span id="valAngle" class="text-2xl font-black text-indigo-600">45°</span>
+                </div>
+                <div class="bg-teal-50 p-4 rounded-xl text-center border border-teal-100">
+                    <span class="block text-[10px] text-teal-400 font-bold uppercase mb-1">Adjacent (x)</span>
+                    <div class="flex flex-col">
+                        <span id="valX" class="text-2xl font-black text-teal-600">0.71</span>
+                        <span class="text-[10px] text-teal-500 font-mono">cos(θ)</span>
+                    </div>
+                </div>
+                <div class="bg-rose-50 p-4 rounded-xl text-center border border-rose-100">
+                    <span class="block text-[10px] text-rose-400 font-bold uppercase mb-1">Opposite (y)</span>
+                    <div class="flex flex-col">
+                        <span id="valY" class="text-2xl font-black text-rose-600">0.71</span>
+                        <span class="text-[10px] text-rose-500 font-mono">sin(θ)</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="mt-12 text-center text-slate-400 text-sm pb-12">
+        <p>Mathematics in Action: Interactive Parametric Reference</p>
+    </footer>
+
+    <script>
+        const circleCanvas = document.getElementById('circleCanvas');
+        const sineCanvas = document.getElementById('sineCanvas');
+        const cosineCanvas = document.getElementById('cosineCanvas');
+        
+        const cCtx = circleCanvas.getContext('2d');
+        const sCtx = sineCanvas.getContext('2d');
+        const kCtx = cosineCanvas.getContext('2d');
+
+        let currentAngle = 45; 
+        let isDragging = false;
+
+        function resize() {
+            const size = circleCanvas.parentElement.clientWidth;
+            circleCanvas.width = size;
+            circleCanvas.height = size;
+            
+            sineCanvas.width = sineCanvas.parentElement.clientWidth;
+            sineCanvas.height = size;
+            
+            cosineCanvas.width = size;
+            cosineCanvas.height = cosineCanvas.parentElement.clientHeight;
+            
+            draw();
+        }
+
+        function drawGraphAxes(ctx, w, h, center, verticalLabels, angleOrientation) {
+            ctx.strokeStyle = '#e2e8f0';
+            ctx.lineWidth = 1;
+            ctx.font = "9px Inter, sans-serif";
+            ctx.fillStyle = "#94a3b8";
+
+            const radius = circleCanvas.width * 0.38;
+
+            // Main central axes
+            ctx.beginPath();
+            if (angleOrientation === 'horizontal') {
+                ctx.moveTo(0, center); ctx.lineTo(w, center);
+            } else {
+                ctx.moveTo(center, 0); ctx.lineTo(center, h);
+            }
+            ctx.stroke();
+
+            // Label the Origin (0,0) point
+            ctx.fillStyle = "#64748b";
+            ctx.font = "bold 9px Inter, sans-serif";
+            if (angleOrientation === 'horizontal') {
+                ctx.fillText("0", 5, center - 5);
+            } else {
+                ctx.fillText("0", center + 5, h - 5);
+            }
+            ctx.font = "9px Inter, sans-serif";
+            ctx.fillStyle = "#94a3b8";
+
+            // Gradations for values (-1 to 1)
+            verticalLabels.forEach(val => {
+                const isMajor = Math.abs(val) === 1 || val === 0;
+                ctx.strokeStyle = isMajor ? 'rgba(226, 232, 240, 0.8)' : 'rgba(226, 232, 240, 0.3)';
+                
+                if (angleOrientation === 'horizontal') {
+                    const yPos = center - val * radius;
+                    ctx.beginPath(); ctx.moveTo(0, yPos); ctx.lineTo(w, yPos); ctx.stroke();
+                    if (isMajor || Math.abs(val) === 0.5) {
+                        if (val !== 0) ctx.fillText(val.toFixed(2), 5, yPos + 3);
+                    }
+                } else {
+                    const xPos = center + val * radius;
+                    ctx.beginPath(); ctx.moveTo(xPos, 0); ctx.lineTo(xPos, h); ctx.stroke();
+                    if (isMajor || Math.abs(val) === 0.5) {
+                        if (val !== 0) ctx.fillText(val.toFixed(2), xPos - 10, h - 5);
+                    }
+                }
+            });
+
+            // Gradations for Angles (0, 90, 180, 270, 360)
+            [0, 90, 180, 270, 360].forEach(deg => {
+                ctx.strokeStyle = 'rgba(226, 232, 240, 0.5)';
+                if (angleOrientation === 'horizontal') {
+                    const px = w - 10 - (deg / 360) * (w - 25);
+                    ctx.beginPath(); ctx.moveTo(px, center - radius); ctx.lineTo(px, center + radius); ctx.stroke();
+                    ctx.fillText(deg + "°", px - 8, center - radius - 10);
+                } else {
+                    const py = (deg / 360) * (h - 30) + 15;
+                    ctx.beginPath(); ctx.moveTo(center - radius, py); ctx.lineTo(center + radius, py); ctx.stroke();
+                    ctx.fillText(deg + "°", center + radius + 5, py + 3);
+                }
+            });
+        }
+
+        function draw() {
+            const cw = circleCanvas.width;
+            const ch = circleCanvas.height;
+            const center = cw / 2;
+            const radius = cw * 0.38;
+
+            const rad = currentAngle * (Math.PI / 180);
+            const rawX = Math.cos(rad);
+            const rawY = Math.sin(rad);
+            const x = rawX * radius;
+            const y = -rawY * radius; 
+
+            // --- 1. Draw Circle View ---
+            cCtx.clearRect(0, 0, cw, ch);
+            
+            // Grid & Axes
+            cCtx.strokeStyle = '#f1f5f9';
+            cCtx.beginPath();
+            cCtx.moveTo(center, 0); cCtx.lineTo(center, ch);
+            cCtx.moveTo(0, center); cCtx.lineTo(cw, center);
+            cCtx.stroke();
+            
+            // Sub-gradations for Circle
+            cCtx.strokeStyle = 'rgba(241, 245, 249, 0.5)';
+            [-0.75, -0.5, -0.25, 0.25, 0.5, 0.75].forEach(v => {
+                cCtx.beginPath(); cCtx.moveTo(0, center + v * radius); cCtx.lineTo(cw, center + v * radius); cCtx.stroke();
+                cCtx.beginPath(); cCtx.moveTo(center + v * radius, 0); cCtx.lineTo(center + v * radius, ch); cCtx.stroke();
+            });
+
+            // Scale markers on Circle
+            cCtx.font = "9px Inter"; cCtx.fillStyle = "#cbd5e1";
+            cCtx.fillText("1.0", center + radius - 5, center + 12);
+            cCtx.fillText("-1.0", center - radius - 15, center + 12);
+            cCtx.fillText("1.0", center + 5, center - radius + 5);
+            cCtx.fillText("-1.0", center + 5, center + radius + 12);
+            cCtx.fillStyle = "#64748b";
+            cCtx.font = "bold 9px Inter";
+            cCtx.fillText("0", center + 5, center - 5);
+
+            // The Circle
+            cCtx.strokeStyle = '#e2e8f0';
+            cCtx.lineWidth = 1.5;
+            cCtx.beginPath();
+            cCtx.arc(center, center, radius, 0, Math.PI * 2);
+            cCtx.stroke();
+
+            // Triangle Legs
+            cCtx.strokeStyle = '#14b8a6'; // x
+            cCtx.lineWidth = 4;
+            cCtx.beginPath(); cCtx.moveTo(center, center); cCtx.lineTo(center + x, center); cCtx.stroke();
+
+            cCtx.strokeStyle = '#f43f5e'; // y
+            cCtx.lineWidth = 4;
+            cCtx.beginPath(); cCtx.moveTo(center + x, center); cCtx.lineTo(center + x, center + y); cCtx.stroke();
+
+            cCtx.strokeStyle = '#6366f1'; // radius
+            cCtx.lineWidth = 4;
+            cCtx.beginPath(); cCtx.moveTo(center, center); cCtx.lineTo(center + x, center + y); cCtx.stroke();
+
+            // Labels
+            cCtx.font = "bold 12px Inter, sans-serif";
+            cCtx.fillStyle = "#14b8a6";
+            cCtx.fillText(`x: ${rawX.toFixed(2)}`, center + x/2 - 15, center + (y > 0 ? -10 : 20));
+            cCtx.fillStyle = "#f43f5e";
+            cCtx.fillText(`y: ${rawY.toFixed(2)}`, center + x + 10, center + y/2 + 5);
+            
+            cCtx.strokeStyle = "#6366f1";
+            cCtx.lineWidth = 2;
+            cCtx.beginPath();
+            cCtx.arc(center, center, 30, 0, -rad, currentAngle > 0);
+            cCtx.stroke();
+            cCtx.fillStyle = "#6366f1";
+            cCtx.fillText(`${Math.round(currentAngle)}°`, center + 35 * Math.cos(rad/2), center - 35 * Math.sin(rad/2));
+
+            // Projections
+            cCtx.setLineDash([4, 4]);
+            cCtx.strokeStyle = "#cbd5e1";
+            cCtx.lineWidth = 1;
+            cCtx.beginPath(); cCtx.moveTo(center + x, center + y); cCtx.lineTo(0, center + y); cCtx.stroke();
+            cCtx.beginPath(); cCtx.moveTo(center + x, center + y); cCtx.lineTo(center + x, ch); cCtx.stroke();
+            cCtx.setLineDash([]);
+
+            cCtx.fillStyle = '#1e293b';
+            cCtx.beginPath(); cCtx.arc(center + x, center + y, 7, 0, Math.PI * 2); cCtx.fill();
+            cCtx.strokeStyle = 'white'; cCtx.lineWidth = 2; cCtx.stroke();
+
+            // --- 2. Draw Sine Graph ---
+            sCtx.clearRect(0, 0, sineCanvas.width, sineCanvas.height);
+            const sw = sineCanvas.width;
+            drawGraphAxes(sCtx, sw, ch, center, [1, 0.75, 0.5, 0.25, 0, -0.25, -0.5, -0.75, -1], 'horizontal');
+            
+            sCtx.strokeStyle = '#f43f5e';
+            sCtx.lineWidth = 2;
+            sCtx.beginPath();
+            for(let a=0; a<=360; a++) {
+                const rA = a * (Math.PI / 180);
+                const py = center - Math.sin(rA) * radius;
+                const px = sw - 10 - (a / 360) * (sw - 25);
+                if(a===0) sCtx.moveTo(px, py); else sCtx.lineTo(px, py);
+            }
+            sCtx.stroke();
+            
+            const currentSineX = sw - 10 - (currentAngle / 360) * (sw - 25);
+            sCtx.fillStyle = '#f43f5e';
+            sCtx.beginPath(); sCtx.arc(currentSineX, center + y, 6, 0, Math.PI*2); sCtx.fill();
+            sCtx.strokeStyle = 'white'; sCtx.lineWidth = 1.5; sCtx.stroke();
+
+            // --- 3. Draw Cosine Graph ---
+            kCtx.clearRect(0, 0, cosineCanvas.width, cosineCanvas.height);
+            const kh = cosineCanvas.height;
+            drawGraphAxes(kCtx, cw, kh, center, [1, 0.75, 0.5, 0.25, 0, -0.25, -0.5, -0.75, -1], 'vertical');
+
+            kCtx.strokeStyle = '#14b8a6';
+            kCtx.lineWidth = 2;
+            kCtx.beginPath();
+            for(let a=0; a<=360; a++) {
+                const rA = a * (Math.PI / 180);
+                const px = center + Math.cos(rA) * radius;
+                const py = (a / 360) * (kh - 30) + 15;
+                if(a===0) kCtx.moveTo(px, py); else kCtx.lineTo(px, py);
+            }
+            kCtx.stroke();
+            
+            const currentCosY = (currentAngle / 360) * (kh - 30) + 15;
+            kCtx.fillStyle = '#14b8a6';
+            kCtx.beginPath(); kCtx.arc(center + x, currentCosY, 6, 0, Math.PI*2); kCtx.fill();
+            kCtx.strokeStyle = 'white'; kCtx.lineWidth = 1.5; kCtx.stroke();
+
+            // Update UI
+            document.getElementById('valAngle').innerText = Math.round(currentAngle) + '°';
+            document.getElementById('valX').innerText = rawX.toFixed(2);
+            document.getElementById('valY').innerText = rawY.toFixed(2);
+        }
+
+        function handleInput(e) {
+            const rect = circleCanvas.getBoundingClientRect();
+            const mouseX = (e.clientX || (e.touches && e.touches[0].clientX)) - rect.left;
+            const mouseY = (e.clientY || (e.touches && e.touches[0].clientY)) - rect.top;
+            const dx = mouseX - (circleCanvas.width / 2);
+            const dy = mouseY - (circleCanvas.height / 2);
+            let angle = Math.atan2(-dy, dx) * (180 / Math.PI);
+            if (angle < 0) angle += 360;
+            currentAngle = angle;
+            draw();
+        }
+
+        circleCanvas.addEventListener('mousedown', (e) => { isDragging = true; handleInput(e); });
+        window.addEventListener('mousemove', (e) => { if(isDragging) handleInput(e); });
+        window.addEventListener('mouseup', () => { isDragging = false; });
+        circleCanvas.addEventListener('touchstart', (e) => { isDragging = true; handleInput(e); e.preventDefault(); }, {passive: false});
+        window.addEventListener('touchmove', (e) => { if(isDragging) handleInput(e); }, {passive: false});
+        window.addEventListener('touchend', () => { isDragging = false; });
+
+        window.addEventListener('resize', resize);
+        window.onload = resize;
+
+    </script>
+</body>
+</html>
