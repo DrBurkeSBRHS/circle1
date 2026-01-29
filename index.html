@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reference: The Parametric Circle</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary: #6366f1;
+            --secondary: #14b8a6;
+            --accent: #f43f5e;
+        }
+
+        body {
+            background-color: #f8fafc;
+            color: #1e293b;
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+        }
+
+        .chart-container {
+            position: relative;
+            width: 100%;
+            margin-left: auto;
+            margin-right: auto;
+            height: 350px;
+            max-height: 400px;
+        }
+
+        .concept-card {
+            background: white;
+            border-radius: 1rem;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+            border-top: 4px solid var(--primary);
+        }
+
+        .triangle-viz {
+            background: #f1f5f9;
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            position: relative;
+            overflow: hidden;
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+
+    <header class="max-w-6xl mx-auto mb-12 border-b pb-8">
+        <h1 class="text-4xl md:text-5xl font-black text-slate-900 mb-4">Geometry in Translation</h1>
+        <p class="text-xl text-slate-600 max-w-3xl">
+            A visual reference for the relationship between circular motion, wave functions, and right-triangle trigonometry.
+        </p>
+    </header>
+
+    <main class="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-12 gap-8">
+
+        <!-- CONCEPT: SPATIAL DIMENSIONS -->
+        <section class="col-span-1 md:col-span-4 space-y-6">
+            <div class="concept-card p-6">
+                <h2 class="text-xl font-bold mb-4 text-slate-800">Quantifying the Room</h2>
+                <div class="space-y-4">
+                    <div class="p-4 bg-indigo-50 rounded-lg border-l-4 border-indigo-500">
+                        <p class="text-sm font-semibold text-indigo-900 mb-1">Conceptual Inquiry:</p>
+                        <p class="text-slate-700 italic">"When we ask 'how big' a circle should be relative to this room, what specific geometric properties are we actually comparing?"</p>
+                    </div>
+                    <p class="text-sm text-slate-600 leading-relaxed">
+                        Consider the different ways to measure a circle's footprint. Is it defined by the distance across, the boundary around it, or the space it occupies? How do those measures interact with the boundaries of our physical environment?
+                    </p>
+                </div>
+            </div>
+
+            <div class="concept-card p-6" style="border-top-color: var(--secondary);">
+                <h2 class="text-xl font-bold mb-4 text-slate-800">The Trigonometric Origin</h2>
+                <div class="triangle-viz mb-4">
+                    <!-- Right Triangle Visual Context -->
+                    <svg viewBox="0 0 200 150" class="w-full h-auto">
+                        <!-- Triangle -->
+                        <path d="M40 110 L160 110 L160 30 Z" fill="none" stroke="#64748b" stroke-width="2" />
+                        <!-- Right Angle Mark -->
+                        <path d="M150 110 L150 100 L160 100" fill="none" stroke="#64748b" stroke-width="1" />
+                        <!-- Angle θ -->
+                        <path d="M70 110 A30 30 0 0 0 62 95" fill="none" stroke="#6366f1" stroke-width="2" />
+                        <!-- Labels -->
+                        <text x="75" y="105" font-size="12" fill="#6366f1" font-weight="bold">θ</text>
+                        <text x="100" y="125" font-size="10" fill="#14b8a6" text-anchor="middle">Adjacent (Cos)</text>
+                        <text x="165" y="75" font-size="10" fill="#f43f5e" alignment-baseline="middle">Opposite (Sin)</text>
+                        <text x="85" y="60" font-size="10" fill="#64748b" transform="rotate(-33 85,60)">Radius (Hypotenuse)</text>
+                    </svg>
+                </div>
+                <div class="space-y-3 text-sm text-slate-600">
+                    <p>
+                        Every point on a circle can be viewed as the tip of a <strong>right triangle</strong>. 
+                    </p>
+                    <p>
+                        The <strong>Opposite</strong> side represents the vertical displacement ($y$), while the <strong>Adjacent</strong> side represents the horizontal displacement ($x$). As the angle changes, the lengths of these sides oscillate predictably.
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- CONCEPT: THE PARAMETRIC ENGINE -->
+        <section class="col-span-1 md:col-span-8 concept-card p-8">
+            <h2 class="text-2xl font-black text-slate-900 mb-6">Parametric Synthesis</h2>
+            
+            <p class="text-slate-600 mb-8 leading-relaxed">
+                The parametric equation treats $x$ and $y$ as independent functions of a single variable: the angle. By calculating these components separately, we can plot a perfect circle without needing a physical center-point tether.
+            </p>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-12">
+                <!-- Visual Component A: The Circle -->
+                <div>
+                    <div class="mb-4 flex justify-between items-end">
+                        <h3 class="text-xs font-bold uppercase tracking-widest text-slate-400">Spatial Result (X, Y)</h3>
+                        <span class="text-[10px] bg-slate-100 px-2 py-0.5 rounded text-slate-500 font-mono">r · cos(θ), r · sin(θ)</span>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="circleScatter"></canvas>
+                    </div>
+                </div>
+
+                <!-- Visual Component B: The Waves -->
+                <div>
+                    <div class="mb-4 flex justify-between items-end">
+                        <h3 class="text-xs font-bold uppercase tracking-widest text-slate-400">Wave Components</h3>
+                        <span class="text-[10px] bg-slate-100 px-2 py-0.5 rounded text-slate-500 font-mono">Sine & Cosine Oscillation</span>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="waveLines"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-12 grid grid-cols-1 md:grid-cols-2 gap-6 pt-8 border-t border-slate-100">
+                <div class="bg-slate-50 p-4 rounded-xl border-l-4 border-teal-500">
+                    <h4 class="font-bold text-teal-600 mb-1">X: The Horizontal Leg</h4>
+                    <p class="text-xs text-slate-500 leading-relaxed">
+                        The <strong>Adjacent</strong> side of the triangle. Its length is determined by the <strong>Cosine</strong> function, representing how far left or right a point sits from the origin.
+                    </p>
+                </div>
+                <div class="bg-slate-50 p-4 rounded-xl border-l-4 border-rose-500">
+                    <h4 class="font-bold text-rose-600 mb-1">Y: The Vertical Leg</h4>
+                    <p class="text-xs text-slate-500 leading-relaxed">
+                        The <strong>Opposite</strong> side of the triangle. Its length is determined by the <strong>Sine</strong> function, representing how far forward or backward a point sits from the origin.
+                    </p>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="mt-12 text-center text-slate-400 text-sm pb-12">
+        <p>Mathematics in Action: Parametric Reference</p>
+    </footer>
+
+    <script>
+        // TOOLTIP CONFIG
+        const tooltipConfig = {
+            plugins: {
+                tooltip: {
+                    callbacks: {
+                        title: function(tooltipItems) {
+                            return tooltipItems[0].label || 'Angle';
+                        }
+                    }
+                }
+            }
+        };
+
+        // DATA GENERATION
+        const angles = [];
+        const xCoords = [];
+        const yCoords = [];
+        const radius = 10;
+
+        for (let i = 0; i <= 360; i += 15) {
+            const rad = i * (Math.PI / 180);
+            angles.push(i + '°');
+            xCoords.push(parseFloat((radius * Math.cos(rad)).toFixed(2)));
+            yCoords.push(parseFloat((radius * Math.sin(rad)).toFixed(2)));
+        }
+
+        // CHART: Circle Scatter
+        const ctxScatter = document.getElementById('circleScatter').getContext('2d');
+        new Chart(ctxScatter, {
+            type: 'scatter',
+            data: {
+                datasets: [{
+                    label: 'Coordinates',
+                    data: xCoords.map((x, i) => ({ x: x, y: yCoords[i] })),
+                    backgroundColor: '#6366f1',
+                    pointRadius: 5
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: { min: -12, max: 12, grid: { color: '#f1f5f9' } },
+                    y: { min: -12, max: 12, grid: { color: '#f1f5f9' } }
+                },
+                plugins: {
+                    legend: { display: false }
+                }
+            }
+        });
+
+        // CHART: Wave Lines
+        const ctxWaves = document.getElementById('waveLines').getContext('2d');
+        new Chart(ctxWaves, {
+            type: 'line',
+            data: {
+                labels: angles,
+                datasets: [
+                    {
+                        label: 'Adjacent (Cos)',
+                        data: xCoords,
+                        borderColor: '#14b8a6',
+                        backgroundColor: 'rgba(20, 184, 166, 0.1)',
+                        borderWidth: 2,
+                        tension: 0.4,
+                        fill: true
+                    },
+                    {
+                        label: 'Opposite (Sin)',
+                        data: yCoords,
+                        borderColor: '#f43f5e',
+                        backgroundColor: 'rgba(244, 63, 94, 0.1)',
+                        borderWidth: 2,
+                        tension: 0.4,
+                        fill: true
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: { ticks: { maxTicksLimit: 8 }, grid: { display: false } },
+                    y: { min: -12, max: 12 }
+                },
+                plugins: {
+                    legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } }
+                }
+            }
+        });
+    </script>
+</body>
+</html>
