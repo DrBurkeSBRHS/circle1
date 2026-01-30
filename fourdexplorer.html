@@ -3,287 +3,232 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>4D Horizon Explorer</title>
+    <title>4D Manifold Projection</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <style>
-        body { background-color: #020617; color: #f1f5f9; font-family: 'Inter', sans-serif; height: 100vh; margin: 0; overflow: hidden; }
-        .ui-panel { background: rgba(15, 23, 42, 0.9); backdrop-filter: blur(12px); border-right: 1px solid #1e293b; }
-        input[type=range] { accent-color: #f472b6; height: 6px; border-radius: 4px; appearance: none; background: #334155; }
-        input[type=range]::-webkit-slider-thumb { appearance: none; height: 18px; width: 18px; border-radius: 50%; background: #f472b6; cursor: pointer; border: 2px solid #1e293b; }
-        .active-tab { border-bottom: 2px solid #f472b6; color: #f472b6; }
-        canvas { touch-action: none; cursor: move; }
-        .glass-card { background: rgba(30, 41, 59, 0.5); border: 1px solid #334155; border-radius: 8px; padding: 12px; }
-        .btn-tab { flex: 1; padding: 10px 4px; font-size: 9px; font-weight: 800; transition: all 0.2s; color: #64748b; border-bottom: 2px solid transparent; text-transform: uppercase; letter-spacing: 0.05em; }
-        .btn-tab.active-tab { color: #f472b6; border-color: #f472b6; background: rgba(244, 114, 182, 0.05); }
+        body { background-color: #02040a; color: #e2e8f0; font-family: 'Inter', sans-serif; height: 100vh; margin: 0; overflow: hidden; }
+        .ui-panel { background: rgba(10, 10, 20, 0.9); backdrop-filter: blur(20px); border-right: 1px solid #2e1065; }
+        input[type=range] { accent-color: #a855f7; height: 5px; border-radius: 4px; appearance: none; background: #1e1b4b; }
+        input[type=range]::-webkit-slider-thumb { appearance: none; height: 18px; width: 18px; border-radius: 50%; background: #c084fc; cursor: pointer; border: 2px solid #02040a; box-shadow: 0 0 10px rgba(168, 85, 247, 0.5); }
+        .btn-tab { flex: 1; padding: 14px 4px; font-size: 11px; font-weight: 800; transition: all 0.3s; color: #6366f1; border-bottom: 2px solid transparent; text-transform: uppercase; letter-spacing: 0.15em; }
+        .btn-tab.active-tab { color: #d8b4fe; border-color: #a855f7; background: rgba(168, 85, 247, 0.1); }
+        .glass-card { background: rgba(15, 12, 41, 0.6); border: 1px solid #3b0764; border-radius: 12px; padding: 16px; }
+        canvas { touch-action: none; }
     </style>
 </head>
 <body class="flex flex-col md:flex-row h-full">
 
-    <aside class="w-full md:w-80 ui-panel p-6 flex flex-col gap-6 z-10 shadow-2xl overflow-y-auto shrink-0">
+    <aside class="w-full md:w-80 ui-panel p-6 flex flex-col gap-6 z-10 shadow-2xl shrink-0">
         <div>
-            <h1 class="text-xl font-black tracking-tight text-white italic">4D<span class="text-pink-500 font-normal">HORIZON</span></h1>
-            <p class="text-[10px] text-slate-500 uppercase font-bold tracking-widest mt-1">Visualization Engine</p>
+            <h1 class="text-2xl font-black tracking-tighter text-white">HYPER<span class="text-purple-500">GLYPH</span></h1>
+            <p class="text-[10px] text-purple-400/60 uppercase font-bold tracking-widest mt-1">4-Plane Projection Engine</p>
         </div>
 
-        <div class="flex border-b border-slate-800">
-            <button onclick="setMode('h-slice')" id="tab-h-slice" class="btn-tab active-tab">Sphere Slice</button>
-            <button onclick="setMode('h-proj')" id="tab-h-proj" class="btn-tab">Sphere Proj</button>
-            <button onclick="setMode('t-proj')" id="tab-t-proj" class="btn-tab">Cube Proj</button>
+        <div class="flex border-b border-indigo-900/50">
+            <button onclick="setMode('h-sphere')" id="tab-h-sphere" class="btn-tab active-tab">3-Sphere</button>
+            <button onclick="setMode('tesseract')" id="tab-tesseract" class="btn-tab">Tesseract</button>
         </div>
 
-        <div class="glass-card">
-            <div class="flex justify-between items-center mb-3">
-                <span class="text-[10px] font-black text-pink-400 uppercase tracking-tighter">W-Axis (4D Translation)</span>
-                <span id="val-w" class="font-mono text-xs text-white">0.00</span>
-            </div>
-            <input type="range" id="input-w" min="-1.5" max="1.5" step="0.01" value="0" class="w-full">
-        </div>
-
-        <div class="space-y-4">
-            <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">4D Rotation Control</span>
+        <div class="space-y-6">
             <div>
-                <div class="flex justify-between text-[11px] mb-1 text-slate-300">XW PLANE <span id="val-xw" class="font-mono">0°</span></div>
-                <input type="range" id="rot-xw" min="0" max="360" step="1" value="0" class="w-full">
-            </div>
-            <div>
-                <div class="flex justify-between text-[11px] mb-1 text-slate-300">YW PLANE <span id="val-yw" class="font-mono">0°</span></div>
-                <input type="range" id="rot-yw" min="0" max="360" step="1" value="0" class="w-full">
-            </div>
-            <div>
-                <div class="flex justify-between text-[11px] mb-1 text-slate-300">ZW PLANE <span id="val-zw" class="font-mono">0°</span></div>
-                <input type="range" id="rot-zw" min="0" max="360" step="1" value="0" class="w-full">
+                <h3 class="text-[10px] font-black text-indigo-300 uppercase tracking-widest mb-4">Ana/Kata Rotation (W-Axis)</h3>
+                
+                <div class="glass-card mb-4">
+                    <div class="flex justify-between text-[11px] mb-2 text-purple-300 font-bold uppercase italic">XW Plane (Inside-Out)</div>
+                    <input type="range" id="rot-xw" min="0" max="6.28" step="0.01" value="0.8" class="w-full">
+                </div>
+
+                <div class="glass-card mb-4">
+                    <div class="flex justify-between text-[11px] mb-2 text-purple-300 font-bold uppercase italic">YW Plane</div>
+                    <input type="range" id="rot-yw" min="0" max="6.28" step="0.01" value="0" class="w-full">
+                </div>
+
+                <div class="glass-card">
+                    <div class="flex justify-between text-[11px] mb-2 text-purple-300 font-bold uppercase italic">ZW Plane</div>
+                    <input type="range" id="rot-zw" min="0" max="6.28" step="0.01" value="0" class="w-full">
+                </div>
             </div>
         </div>
 
-        <div class="mt-auto p-3 bg-slate-900 border border-slate-800 rounded-lg">
-            <h3 class="text-[10px] font-bold text-slate-400 uppercase mb-1">Mathematical Guide</h3>
-            <p id="logic-desc" class="text-[11px] text-slate-500 leading-relaxed">
-                Showing a 3D intersection of a 4D hypersphere.
+        <div class="glass-card border-purple-500/20 bg-purple-500/5 mt-auto">
+            <p class="text-[11px] text-indigo-200/70 leading-relaxed" id="info-box">
+                Rendering a 3-Sphere using 4D parallels and meridians. Notice how the spherical "slices" expand and contract as they rotate through the W-axis.
             </p>
         </div>
     </aside>
 
     <main class="flex-grow relative overflow-hidden">
         <div id="container" class="w-full h-full"></div>
-        <div class="absolute bottom-6 right-6 text-right pointer-events-none">
-            <div id="hud-status" class="text-2xl font-light text-white tracking-tighter uppercase italic">Hypersphere Slice</div>
-        </div>
     </main>
 
     <script>
         let scene, camera, renderer, mainGroup;
-        let mode = 'h-slice';
-        const RADIUS = 1.0;
-        
-        // Tesseract vertices
-        let tVertices = [];
-        for (let i = 0; i < 16; i++) {
-            tVertices.push([(i & 1 ? 1 : -1), (i & 2 ? 1 : -1), (i & 4 ? 1 : -1), (i & 8 ? 1 : -1)]);
-        }
+        let mode = 'h-sphere';
+        const R = 2.0;
 
         function init() {
             scene = new THREE.Scene();
-            scene.background = new THREE.Color(0x020617);
-
             camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
-            camera.position.set(4, 3, 5);
+            camera.position.set(5, 4, 7);
             camera.lookAt(0, 0, 0);
 
-            renderer = new THREE.WebGLRenderer({ antialias: true });
-            renderer.setPixelRatio(window.devicePixelRatio);
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
             document.getElementById('container').appendChild(renderer.domElement);
-
-            const ambient = new THREE.AmbientLight(0xffffff, 0.3);
-            scene.add(ambient);
-            
-            const pointLight = new THREE.PointLight(0xf472b6, 2);
-            pointLight.position.set(5, 5, 5);
-            scene.add(pointLight);
-
-            const grid = new THREE.GridHelper(20, 40, 0x1e293b, 0x0f172a);
-            grid.position.y = -2;
-            scene.add(grid);
 
             mainGroup = new THREE.Group();
             scene.add(mainGroup);
 
             setupEvents();
             onResize();
-            updateVisualization();
-            animate();
+            renderLoop();
         }
 
-        function rotate4D(v, xw, yw, zw) {
-            let [x, y, z, w] = v;
-            let s, c;
+        function rotate4D(p, xw, yw, zw) {
+            let [x, y, z, w] = p;
+            let c, s;
             // XW
-            s = Math.sin(xw); c = Math.cos(xw);
+            c = Math.cos(xw); s = Math.sin(xw);
             [x, w] = [x * c - w * s, x * s + w * c];
             // YW
-            s = Math.sin(yw); c = Math.cos(yw);
+            c = Math.cos(yw); s = Math.sin(yw);
             [y, w] = [y * c - w * s, y * s + w * c];
             // ZW
-            s = Math.sin(zw); c = Math.cos(zw);
+            c = Math.cos(zw); s = Math.sin(zw);
             [z, w] = [z * c - w * s, z * s + w * c];
             return [x, y, z, w];
         }
 
-        function updateVisualization() {
-            mainGroup.clear();
-            const wVal = parseFloat(document.getElementById('input-w').value);
-            const xw = THREE.MathUtils.degToRad(document.getElementById('rot-xw').value);
-            const yw = THREE.MathUtils.degToRad(document.getElementById('rot-yw').value);
-            const zw = THREE.MathUtils.degToRad(document.getElementById('rot-zw').value);
-
-            // Update UI Labels
-            document.getElementById('val-w').innerText = wVal.toFixed(2);
-            document.getElementById('val-xw').innerText = document.getElementById('rot-xw').value + '°';
-            document.getElementById('val-yw').innerText = document.getElementById('rot-yw').value + '°';
-            document.getElementById('val-zw').innerText = document.getElementById('rot-zw').value + '°';
-
-            if (mode === 'h-slice') {
-                renderHypersphereSlice(wVal);
-            } else if (mode === 'h-proj') {
-                renderHypersphereProjection(wVal, xw, yw, zw);
-            } else if (mode === 't-proj') {
-                renderTesseractProjection(wVal, xw, yw, zw);
-            }
-        }
-
-        function renderHypersphereSlice(w) {
-            document.getElementById('hud-status').innerText = "Hypersphere Slice";
-            document.getElementById('logic-desc').innerText = "A 3D 'cut' of a 4D sphere. Notice how it exists only when W is within the radius.";
-            
-            const r = RADIUS;
-            const sliceRadius = Math.sqrt(Math.max(0, r * r - w * w));
-            
-            if (sliceRadius > 0) {
-                const geo = new THREE.SphereGeometry(sliceRadius, 32, 32);
-                const mat = new THREE.MeshPhongMaterial({ 
-                    color: 0xf472b6, 
-                    transparent: true, 
-                    opacity: 0.6,
-                    shininess: 100 
-                });
-                const mesh = new THREE.Mesh(geo, mat);
-                
-                const wire = new THREE.LineSegments(
-                    new THREE.EdgesGeometry(geo),
-                    new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.2 })
-                );
-                mesh.add(wire);
-                mainGroup.add(mesh);
-                
-                // Add center node
-                const node = new THREE.Mesh(new THREE.SphereGeometry(0.05, 8, 8), new THREE.MeshBasicMaterial({ color: 0xffffff }));
-                mainGroup.add(node);
-            }
-        }
-
-        function renderHypersphereProjection(w, xw, yw, zw) {
-            document.getElementById('hud-status').innerText = "Hypersphere Projection";
-            document.getElementById('logic-desc').innerText = "The 4D 'shadow' of a hypersphere. You see two spheres connected by a volume—the 4D equivalent of nested cubes.";
-            
-            // We visualize the hypersphere as longitudinal circles in 4D
-            const latCount = 8;
-            const lonCount = 12;
-            const linePts = [];
-
-            for (let i = 0; i <= latCount; i++) {
-                const phi = (i / latCount) * Math.PI;
-                for (let j = 0; j <= lonCount; j++) {
-                    const theta = (j / lonCount) * 2 * Math.PI;
-                    
-                    // Generate 4D point on 3-sphere surface
-                    const p4 = [
-                        RADIUS * Math.sin(phi) * Math.cos(theta),
-                        RADIUS * Math.sin(phi) * Math.sin(theta),
-                        RADIUS * Math.cos(phi),
-                        0 // Start on W=0 plane
-                    ];
-                    
-                    const rot = rotate4D(p4, xw, yw, zw);
-                    // Project 4D to 3D
-                    const scale = 3 / (3 - (rot[3] + w));
-                    const v3 = new THREE.Vector3(rot[0] * scale, rot[1] * scale, rot[2] * scale);
-                    
-                    // Add point to vertex nodes
-                    if (j % 2 === 0 && i % 2 === 0) {
-                        const node = new THREE.Mesh(new THREE.SphereGeometry(0.03, 6, 6), new THREE.MeshBasicMaterial({ color: 0xffffff }));
-                        node.position.copy(v3);
-                        mainGroup.add(node);
-                    }
-
-                    // Drawing wireframe lines (logic for circles)
-                    // ... abbreviated for performance ...
-                }
-            }
-            
-            // Simple visual representation: Inner and outer shell
-            [0.5, 1.0].forEach(r => {
-                const geo = new THREE.SphereGeometry(r, 16, 12);
-                const rotGeo = geo.clone();
-                const pos = rotGeo.attributes.position;
-                for(let i=0; i<pos.count; i++) {
-                    const p4 = [pos.getX(i), pos.getY(i), pos.getZ(i), 0];
-                    const rot = rotate4D(p4, xw, yw, zw);
-                    const scale = 3 / (3 - (rot[3] + w));
-                    pos.setXYZ(i, rot[0] * scale, rot[1] * scale, rot[2] * scale);
-                }
-                const wire = new THREE.LineSegments(
-                    new THREE.EdgesGeometry(rotGeo),
-                    new THREE.LineBasicMaterial({ color: 0xf472b6, transparent: true, opacity: 0.4 })
-                );
-                mainGroup.add(wire);
-            });
-        }
-
-        function renderTesseractProjection(w, xw, yw, zw) {
-            document.getElementById('hud-status').innerText = "Hypercube Projection";
-            document.getElementById('logic-desc').innerText = "A 4D Tesseract projected into 3D. The inner cube is further away in the 4th dimension.";
-            
-            const projected = tVertices.map(v => {
-                const rot = rotate4D(v, xw, yw, zw);
-                const scale = 3 / (4 - (rot[3] + w));
-                return new THREE.Vector3(rot[0] * scale, rot[1] * scale, rot[2] * scale);
-            });
-
-            // Draw Edges
-            const linePts = [];
-            for (let i = 0; i < 16; i++) {
-                for (let j = i + 1; j < 16; j++) {
-                    let diff = 0;
-                    for (let k = 0; k < 4; k++) if (tVertices[i][k] !== tVertices[j][k]) diff++;
-                    if (diff === 1) {
-                        linePts.push(projected[i], projected[j]);
-                    }
-                }
-            }
-
-            const geo = new THREE.BufferGeometry().setFromPoints(linePts);
-            mainGroup.add(new THREE.LineSegments(geo, new THREE.LineBasicMaterial({ color: 0xf472b6, transparent: true, opacity: 0.7 })));
-
-            // Add Vertex Nodes
-            projected.forEach(p => {
-                const dot = new THREE.Mesh(new THREE.SphereGeometry(0.06, 8, 8), new THREE.MeshBasicMaterial({ color: 0xffffff }));
-                dot.position.copy(p);
-                mainGroup.add(dot);
-            });
+        function project(p4) {
+            const d = 4.0; // 4D camera distance
+            const f = d / (d - p4[3]);
+            return new THREE.Vector3(p4[0] * f, p4[1] * f, p4[2] * f);
         }
 
         function setMode(m) {
             mode = m;
             document.querySelectorAll('.btn-tab').forEach(b => b.classList.remove('active-tab'));
             document.getElementById('tab-' + m).classList.add('active-tab');
-            updateVisualization();
+            document.getElementById('info-box').innerText = m === 'h-sphere' 
+                ? "Rendering a 3-Sphere using 4D parallels and meridians. Rotating through W causes the polar collapse effect."
+                : "A Tesseract (Hypercube). Removed the center point. Every edge represents a connection in 4D space.";
+        }
+
+        function createHypersphereMesh(xw, yw, zw) {
+            const lines = [];
+            const rings = 8; 
+            const segments = 16;
+            
+            // 4D Hypersphere parametric:
+            // x = R sin(psi) sin(theta) cos(phi)
+            // y = R sin(psi) sin(theta) sin(phi)
+            // z = R sin(psi) cos(theta)
+            // w = R cos(psi)
+            
+            // Draw 4D meridians and parallels
+            for (let i = 1; i < rings; i++) {
+                const psi = (i / rings) * Math.PI;
+                
+                // Ring in theta/phi
+                const points = [];
+                for (let j = 0; j <= segments; j++) {
+                    const theta = (j / segments) * Math.PI;
+                    for(let k = 0; k <= segments; k++) {
+                        const phi = (k / segments) * 2 * Math.PI;
+                        
+                        // We draw select circles to represent the "curved grid"
+                        if (k === 0 || k === segments/2) {
+                            const x = R * Math.sin(psi) * Math.sin(theta) * Math.cos(phi);
+                            const y = R * Math.sin(psi) * Math.sin(theta) * Math.sin(phi);
+                            const z = R * Math.sin(psi) * Math.cos(theta);
+                            const w = R * Math.cos(psi);
+                            points.push(project(rotate4D([x,y,z,w], xw, yw, zw)));
+                        }
+                    }
+                }
+                
+                // Draw latitude circles
+                for (let j = 1; j < rings; j++) {
+                    const theta = (j/rings) * Math.PI;
+                    const latCircle = [];
+                    for (let k = 0; k <= segments; k++) {
+                        const phi = (k/segments) * 2 * Math.PI;
+                        const x = R * Math.sin(psi) * Math.sin(theta) * Math.cos(phi);
+                        const y = R * Math.sin(psi) * Math.sin(theta) * Math.sin(phi);
+                        const z = R * Math.sin(psi) * Math.cos(theta);
+                        const w = R * Math.cos(psi);
+                        latCircle.push(project(rotate4D([x,y,z,w], xw, yw, zw)));
+                    }
+                    lines.push(latCircle);
+                }
+            }
+            return lines;
+        }
+
+        function createTesseractEdges(xw, yw, zw) {
+            const vertices = [];
+            for (let i = 0; i < 16; i++) {
+                const p4 = [
+                    (i & 1 ? 1 : -1) * 1.2,
+                    (i & 2 ? 1 : -1) * 1.2,
+                    (i & 4 ? 1 : -1) * 1.2,
+                    (i & 8 ? 1 : -1) * 1.2
+                ];
+                vertices.push(project(rotate4D(p4, xw, yw, zw)));
+            }
+            
+            const edges = [];
+            for (let i = 0; i < 16; i++) {
+                for (let j = i + 1; j < 16; j++) {
+                    let diff = 0;
+                    for (let k = 0; k < 4; k++) {
+                        if (((i >> k) & 1) !== ((j >> k) & 1)) diff++;
+                    }
+                    if (diff === 1) edges.push([vertices[i], vertices[j]]);
+                }
+            }
+            return edges;
+        }
+
+        function renderLoop() {
+            requestAnimationFrame(renderLoop);
+            mainGroup.clear();
+
+            const xw = parseFloat(document.getElementById('rot-xw').value);
+            const yw = parseFloat(document.getElementById('rot-yw').value);
+            const zw = parseFloat(document.getElementById('rot-zw').value);
+
+            if (mode === 'h-sphere') {
+                const paths = createHypersphereMesh(xw, yw, zw);
+                paths.forEach(path => {
+                    const geo = new THREE.BufferGeometry().setFromPoints(path);
+                    const mat = new THREE.LineBasicMaterial({ color: 0x9333ea, transparent: true, opacity: 0.4 });
+                    mainGroup.add(new THREE.Line(geo, mat));
+                });
+            } else {
+                const edges = createTesseractEdges(xw, yw, zw);
+                edges.forEach(edge => {
+                    const geo = new THREE.BufferGeometry().setFromPoints(edge);
+                    const mat = new THREE.LineBasicMaterial({ color: 0xc084fc, transparent: true, opacity: 0.8 });
+                    mainGroup.add(new THREE.Line(geo, mat));
+                });
+                // Add glowing vertices
+                const vertGeo = new THREE.SphereGeometry(0.06, 8, 8);
+                const vertMat = new THREE.MeshBasicMaterial({ color: 0xe9d5ff });
+                edges.forEach(edge => {
+                    [edge[0], edge[1]].forEach(pos => {
+                        const m = new THREE.Mesh(vertGeo, vertMat);
+                        m.position.copy(pos);
+                        mainGroup.add(m);
+                    });
+                });
+            }
+
+            renderer.render(scene, camera);
         }
 
         function setupEvents() {
-            ['input-w', 'rot-xw', 'rot-yw', 'rot-zw'].forEach(id => {
-                document.getElementById(id).addEventListener('input', updateVisualization);
-            });
-            
+            window.addEventListener('resize', onResize);
             let isDown = false, lastX, lastY;
             renderer.domElement.addEventListener('pointerdown', e => { isDown = true; lastX = e.clientX; lastY = e.clientY; });
             window.addEventListener('pointerup', () => isDown = false);
@@ -306,12 +251,7 @@
             renderer.setSize(container.clientWidth, container.clientHeight);
         }
 
-        function animate() {
-            requestAnimationFrame(animate);
-            renderer.render(scene, camera);
-        }
-
-        window.onload = init;
+        init();
     </script>
 </body>
 </html>
