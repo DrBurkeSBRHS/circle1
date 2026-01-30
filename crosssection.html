@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Geometric Slicer Pro</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        body { background-color: #020617; color: #f1f5f9; font-family: 'Inter', system-ui, sans-serif; height: 100vh; margin: 0; overflow: hidden; }
+        .ui-panel { background: rgba(15, 23, 42, 0.9); backdrop-filter: blur(16px); border-right: 1px solid #1e293b; }
+        input[type=range] { accent-color: #818cf8; height: 6px; border-radius: 4px; appearance: none; background: #334155; }
+        input[type=range]::-webkit-slider-thumb { appearance: none; height: 16px; width: 16px; border-radius: 50%; background: #818cf8; cursor: pointer; border: 2px solid #1e293b; }
+        .active-btn { border-color: #818cf8; background: rgba(129, 140, 248, 0.2); color: #fff; }
+        .snap-active { background: #818cf8 !important; color: #0f172a !important; }
+        canvas { touch-action: none; }
+        
+        /* Toggle Switch Style */
+        .switch { position: relative; display: inline-block; width: 34px; height: 20px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #334155; transition: .4s; border-radius: 20px; }
+        .slider:before { position: absolute; content: ""; height: 14px; width: 14px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
+        input:checked + .slider { background-color: #818cf8; }
+        input:checked + .slider:before { transform: translateX(14px); }
+    </style>
+</head>
+<body class="flex flex-col md:flex-row h-full">
+
+    <!-- Sidebar -->
+    <aside class="w-full md:w-80 ui-panel p-6 flex flex-col gap-6 z-10 shadow-2xl overflow-y-auto shrink-0">
+        <div>
+            <h1 class="text-lg font-black tracking-tighter text-indigo-400">GEOMETRIC SECTIONS</h1>
+            <p class="text-[10px] text-slate-500 uppercase font-bold tracking-widest">3D Intersection Lab</p>
+        </div>
+
+        <!-- Solid Selection -->
+        <div class="flex flex-col gap-2">
+            <span class="text-[10px] font-bold text-slate-400 uppercase">Select Solid</span>
+            <div class="grid grid-cols-3 gap-2">
+                <button onclick="changeSolid('sphere')" id="btn-sphere" class="active-btn border border-slate-700 py-2 rounded-md text-[11px] font-bold transition-all">SPHERE</button>
+                <button onclick="changeSolid('cone')" id="btn-cone" class="border border-slate-700 py-2 rounded-md text-[11px] font-bold transition-all">CONE</button>
+                <button onclick="changeSolid('cube')" id="btn-cube" class="border border-slate-700 py-2 rounded-md text-[11px] font-bold transition-all">CUBE</button>
+            </div>
+        </div>
+
+        <!-- Plane Orientation -->
+        <div class="space-y-4">
+            <div class="flex justify-between items-center">
+                <span class="text-[10px] font-bold text-slate-400 uppercase">Plane Controls</span>
+                <label class="flex items-center gap-2 cursor-pointer">
+                    <span class="text-[9px] font-bold text-slate-500 uppercase">45° Snap</span>
+                    <div class="switch">
+                        <input type="checkbox" id="snap-toggle">
+                        <span class="slider"></span>
+                    </div>
+                </label>
+            </div>
+            
+            <div>
+                <div class="flex justify-between text-[11px] mb-1">OFFSET <span id="val-dist" class="font-mono text-indigo-400">0.00</span></div>
+                <input type="range" id="input-dist" min="-2.5" max="2.5" step="0.01" value="0" class="w-full">
+            </div>
+            <div>
+                <div class="flex justify-between text-[11px] mb-1">PITCH (X-Axis) <span id="val-pitch" class="font-mono text-rose-400">0°</span></div>
+                <input type="range" id="input-pitch" min="-180" max="180" step="1" value="0" class="w-full">
+            </div>
+            <div>
+                <div class="flex justify-between text-[11px] mb-1">YAW (Y-Axis) <span id="val-yaw" class="font-mono text-emerald-400">0°</span></div>
+                <input type="range" id="input-yaw" min="-180" max="180" step="1" value="0" class="w-full">
+            </div>
+        </div>
+
+        <!-- 2D Viewport -->
+        <div class="mt-auto pt-4 border-t border-slate-800">
+            <span class="text-[10px] font-bold text-slate-400 uppercase block mb-3 text-center">Section View</span>
+            <div class="bg-black/50 rounded-lg border border-slate-700 aspect-square relative flex items-center justify-center overflow-hidden">
+                <canvas id="canvas2d" class="w-full h-full"></canvas>
+            </div>
+            
+            <div class="mt-4 grid grid-cols-2 gap-2">
+                <div class="bg-slate-900/50 p-2 border border-slate-800 rounded">
+                    <p class="text-[9px] text-slate-500 font-bold uppercase">Major Axis</p>
+                    <p class="text-sm font-mono text-white" id="stat-major">0.00</p>
+                </div>
+                <div class="bg-slate-900/50 p-2 border border-slate-800 rounded">
+                    <p class="text-[9px] text-slate-500 font-bold uppercase">Minor Axis</p>
+                    <p class="text-sm font-mono text-white" id="stat-minor">0.00</p>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main View -->
+    <main class="flex-grow relative">
+        <div id="container3d" class="w-full h-full"></div>
+    </main>
+
+    <script>
+        let scene, camera, renderer, solid, plane, sliceLine, measureLine, worldGrid;
+        let currentType = 'sphere';
+        const RADIUS = 2;
+
+        function init() {
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x020617);
+
+            camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(6, 4, 6);
+            camera.lookAt(0, 0, 0);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setPixelRatio(window.devicePixelRatio);
+            document.getElementById('container3d').appendChild(renderer.domElement);
+
+            const ambient = new THREE.AmbientLight(0xffffff, 0.4);
+            scene.add(ambient);
+            const spot = new THREE.SpotLight(0xffffff, 0.8);
+            spot.position.set(10, 15, 10);
+            scene.add(spot);
+
+            worldGrid = new THREE.GridHelper(10, 10, 0x1e293b, 0x0f172a);
+            worldGrid.position.y = -RADIUS - 1;
+            scene.add(worldGrid);
+
+            const planeGeo = new THREE.PlaneGeometry(8, 8);
+            const planeMat = new THREE.MeshPhongMaterial({ 
+                color: 0x818cf8, 
+                side: THREE.DoubleSide, 
+                transparent: true, 
+                opacity: 0.15, 
+                depthWrite: false 
+            });
+            plane = new THREE.Mesh(planeGeo, planeMat);
+            scene.add(plane);
+
+            const planeGrid = new THREE.GridHelper(8, 16, 0x475569, 0x334155);
+            planeGrid.rotateX(Math.PI/2);
+            plane.add(planeGrid);
+
+            sliceLine = new THREE.LineSegments(new THREE.BufferGeometry(), new THREE.LineBasicMaterial({ color: 0xffffff, linewidth: 2.5 }));
+            scene.add(sliceLine);
+
+            measureLine = new THREE.Line(new THREE.BufferGeometry(), new THREE.LineBasicMaterial({ color: 0xf43f5e, linewidth: 2 }));
+            scene.add(measureLine);
+
+            changeSolid('sphere');
+            setupEvents();
+            resize();
+            animate();
+        }
+
+        function changeSolid(type) {
+            if(solid) scene.remove(solid);
+            currentType = type;
+            
+            let geo;
+            if(type === 'sphere') geo = new THREE.SphereGeometry(RADIUS, 64, 64);
+            if(type === 'cone') {
+                geo = new THREE.ConeGeometry(RADIUS, RADIUS * 2.5, 64);
+                // The cone default origin is at its center, so it's already centered relative to height
+            }
+            if(type === 'cube') geo = new THREE.BoxGeometry(RADIUS*1.5, RADIUS*1.5, RADIUS*1.5);
+
+            const mat = new THREE.MeshPhongMaterial({ 
+                color: 0x1e293b, 
+                transparent: true, 
+                opacity: 0.4, 
+                shininess: 40
+            });
+            
+            solid = new THREE.Mesh(geo, mat);
+            
+            const wire = new THREE.LineSegments(
+                new THREE.EdgesGeometry(geo),
+                new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.5 })
+            );
+            solid.add(wire);
+            
+            scene.add(solid);
+
+            document.querySelectorAll('button').forEach(b => b.classList.remove('active-btn'));
+            const btn = document.getElementById('btn-' + type);
+            if(btn) btn.classList.add('active-btn');
+            update();
+        }
+
+        function getIntersectionPoints() {
+            const normal = new THREE.Vector3(0, 0, 1).applyQuaternion(plane.quaternion);
+            const planeConst = parseFloat(document.getElementById('input-dist').value);
+            
+            if(currentType === 'sphere') {
+                const dist = Math.abs(normal.dot(new THREE.Vector3(0,0,0)) - planeConst);
+                if(dist < RADIUS) {
+                    const r = Math.sqrt(RADIUS**2 - dist**2);
+                    return { type: 'circle', radius: r, center: new THREE.Vector3().copy(normal).multiplyScalar(planeConst) };
+                }
+                return null;
+            }
+
+            const points = [];
+            const pos = solid.geometry.attributes.position;
+            const idx = solid.geometry.index;
+            const verts = [];
+            for(let i=0; i<pos.count; i++) verts.push(new THREE.Vector3().fromBufferAttribute(pos, i));
+
+            const edges = new Set();
+            const processEdge = (a, b) => {
+                const key = [Math.min(a,b), Math.max(a,b)].join('|');
+                if(edges.has(key)) return;
+                edges.add(key);
+                const v1 = verts[a], v2 = verts[b];
+                const d1 = v1.dot(normal) - planeConst;
+                const d2 = v2.dot(normal) - planeConst;
+                if(d1 * d2 < 0) {
+                    const t = Math.abs(d1) / (Math.abs(d1) + Math.abs(d2));
+                    points.push(new THREE.Vector3().lerpVectors(v1, v2, t));
+                }
+            };
+
+            if(idx) {
+                for(let i=0; i<idx.count; i+=3) {
+                    processEdge(idx.getX(i), idx.getX(i+1));
+                    processEdge(idx.getX(i+1), idx.getX(i+2));
+                    processEdge(idx.getX(i+2), idx.getX(i));
+                }
+            } else {
+                for(let i=0; i<verts.length; i+=3) {
+                    processEdge(i, i+1); processEdge(i+1, i+2); processEdge(i+2, i);
+                }
+            }
+
+            if(points.length < 3) return null;
+
+            const center = new THREE.Vector3();
+            points.forEach(p => center.add(p));
+            center.divideScalar(points.length);
+            const vX = new THREE.Vector3().subVectors(points[0], center).normalize();
+            const vY = new THREE.Vector3().crossVectors(normal, vX).normalize();
+
+            points.sort((a,b) => {
+                const angA = Math.atan2(new THREE.Vector3().subVectors(a, center).dot(vY), new THREE.Vector3().subVectors(a, center).dot(vX));
+                const angB = Math.atan2(new THREE.Vector3().subVectors(b, center).dot(vY), new THREE.Vector3().subVectors(b, center).dot(vX));
+                return angA - angB;
+            });
+
+            return { type: 'poly', points, center };
+        }
+
+        function update() {
+            const isSnap = document.getElementById('snap-toggle').checked;
+            
+            let pitchVal = parseInt(document.getElementById('input-pitch').value);
+            let yawVal = parseInt(document.getElementById('input-yaw').value);
+
+            if(isSnap) {
+                pitchVal = Math.round(pitchVal / 45) * 45;
+                yawVal = Math.round(yawVal / 45) * 45;
+                // Update slider visuals to reflect snapped values
+                document.getElementById('input-pitch').value = pitchVal;
+                document.getElementById('input-yaw').value = yawVal;
+            }
+
+            const dist = parseFloat(document.getElementById('input-dist').value);
+            const pitch = THREE.MathUtils.degToRad(pitchVal);
+            const yaw = THREE.MathUtils.degToRad(yawVal);
+
+            document.getElementById('val-dist').innerText = dist.toFixed(2);
+            document.getElementById('val-pitch').innerText = pitchVal + '°';
+            document.getElementById('val-yaw').innerText = yawVal + '°';
+
+            plane.rotation.set(pitch, yaw, 0);
+            const normal = new THREE.Vector3(0, 0, 1).applyQuaternion(plane.quaternion);
+            plane.position.copy(normal).multiplyScalar(dist);
+
+            const result = getIntersectionPoints();
+            const canvas = document.getElementById('canvas2d');
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            if(!result) {
+                sliceLine.visible = measureLine.visible = false;
+                document.getElementById('stat-major').innerText = "0.00";
+                document.getElementById('stat-minor').innerText = "0.00";
+                return;
+            }
+
+            sliceLine.visible = measureLine.visible = true;
+            const pts3d = [];
+            const pts2d = [];
+            const invQuat = plane.quaternion.clone().invert();
+
+            if(result.type === 'circle') {
+                const r = result.radius;
+                for(let i=0; i<=64; i++){
+                    const a = (i/64)*Math.PI*2;
+                    const lp = new THREE.Vector3(Math.cos(a)*r, Math.sin(a)*r, 0);
+                    pts2d.push({x: lp.x, y: lp.y});
+                    pts3d.push(lp.clone().applyQuaternion(plane.quaternion).add(plane.position));
+                }
+                document.getElementById('stat-major').innerText = (r*2).toFixed(2);
+                document.getElementById('stat-minor').innerText = (r*2).toFixed(2);
+                measureLine.geometry.setFromPoints([
+                    new THREE.Vector3(-r,0,0).applyQuaternion(plane.quaternion).add(plane.position),
+                    new THREE.Vector3(r,0,0).applyQuaternion(plane.quaternion).add(plane.position)
+                ]);
+            } else {
+                result.points.forEach(p => {
+                    const local = p.clone().sub(plane.position).applyQuaternion(invQuat);
+                    pts2d.push({x: local.x, y: local.y});
+                    pts3d.push(p);
+                });
+                pts3d.push(result.points[0]); 
+                
+                let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+                pts2d.forEach(p => {
+                    minX = Math.min(minX, p.x); maxX = Math.max(maxX, p.x);
+                    minY = Math.min(minY, p.y); maxY = Math.max(maxY, p.y);
+                });
+                document.getElementById('stat-major').innerText = (maxX - minX).toFixed(2);
+                document.getElementById('stat-minor').innerText = (maxY - minY).toFixed(2);
+                
+                measureLine.geometry.setFromPoints([
+                    new THREE.Vector3(minX, (minY+maxY)/2, 0).applyQuaternion(plane.quaternion).add(plane.position),
+                    new THREE.Vector3(maxX, (minY+maxY)/2, 0).applyQuaternion(plane.quaternion).add(plane.position)
+                ]);
+            }
+
+            const segments = [];
+            for(let i=0; i<pts3d.length-1; i++) segments.push(pts3d[i], pts3d[i+1]);
+            sliceLine.geometry.setFromPoints(segments);
+
+            const zoom = (canvas.width * 0.4) / RADIUS;
+            ctx.save();
+            ctx.translate(canvas.width/2, canvas.height/2);
+            
+            ctx.strokeStyle = '#1e293b';
+            ctx.setLineDash([5, 5]);
+            ctx.beginPath();
+            ctx.moveTo(-canvas.width/2, 0); ctx.lineTo(canvas.width/2, 0);
+            ctx.moveTo(0, -canvas.height/2); ctx.lineTo(0, canvas.height/2);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            ctx.beginPath();
+            ctx.strokeStyle = '#fff';
+            ctx.fillStyle = 'rgba(129, 140, 248, 0.4)';
+            ctx.lineWidth = 3;
+            pts2d.forEach((p, i) => {
+                if(i===0) ctx.moveTo(p.x * zoom, -p.y * zoom);
+                else ctx.lineTo(p.x * zoom, -p.y * zoom);
+            });
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+            
+            ctx.restore();
+        }
+
+        function setupEvents() {
+            let isDown = false, lastX, lastY;
+            renderer.domElement.addEventListener('pointerdown', e => { isDown = true; lastX = e.clientX; lastY = e.clientY; });
+            window.addEventListener('pointerup', () => isDown = false);
+            window.addEventListener('pointermove', e => {
+                if(!isDown) return;
+                const sph = new THREE.Spherical().setFromVector3(camera.position);
+                sph.theta -= (e.clientX - lastX) * 0.01;
+                sph.phi -= (e.clientY - lastY) * 0.01;
+                sph.phi = Math.max(0.1, Math.min(Math.PI - 0.1, sph.phi));
+                camera.position.setFromSpherical(sph);
+                camera.lookAt(0,0,0);
+                lastX = e.clientX; lastY = e.clientY;
+            });
+            ['input-dist', 'input-pitch', 'input-yaw'].forEach(id => document.getElementById(id).addEventListener('input', update));
+            document.getElementById('snap-toggle').addEventListener('change', update);
+        }
+
+        function resize() {
+            const container = document.getElementById('container3d');
+            camera.aspect = container.clientWidth / container.clientHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            const c2d = document.getElementById('canvas2d');
+            c2d.width = c2d.offsetWidth * window.devicePixelRatio;
+            c2d.height = c2d.offsetHeight * window.devicePixelRatio;
+            update();
+        }
+
+        window.onload = init;
+        window.onresize = resize;
+
+        function animate() {
+            requestAnimationFrame(animate);
+            renderer.render(scene, camera);
+        }
+    </script>
+</body>
+</html>
