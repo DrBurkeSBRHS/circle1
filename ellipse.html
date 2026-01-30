@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Ellipse: A Constant Sum</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background-color: #f1f5f9;
+            color: #0f172a;
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            overflow-x: hidden;
+        }
+        .canvas-container {
+            position: relative;
+            background: white;
+            border-radius: 1.5rem;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.05), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            cursor: crosshair;
+            touch-action: none;
+        }
+        .panel {
+            background: white;
+            border-radius: 1rem;
+            border: 1px solid #e2e8f0;
+        }
+        .math-font {
+            font-family: 'JetBrains Mono', monospace;
+        }
+        .sum-bar {
+            height: 12px;
+            border-radius: 6px;
+            transition: width 0.3s ease;
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+
+    <header class="max-w-4xl mx-auto mb-8 text-center">
+        <h1 class="text-3xl md:text-4xl font-black text-slate-900 mb-2">Why is it an Ellipse?</h1>
+        <p class="text-slate-600 italic">It's not about the center; it's about the "String."</p>
+    </header>
+
+    <main class="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8">
+        
+        <!-- Logic Panel -->
+        <aside class="space-y-6">
+            <div class="panel p-6">
+                <h2 class="text-xs font-bold uppercase tracking-widest text-indigo-500 mb-4">The Rule</h2>
+                <p class="text-sm text-slate-600 mb-4 leading-relaxed">
+                    An ellipse is defined by two points called <span class="font-bold text-slate-900">Foci</span>. 
+                    No matter where you are on the edge, if you add the distances to both Foci together, the total is always the same.
+                </p>
+                <div class="bg-slate-50 p-4 rounded-lg border border-slate-200">
+                    <p class="math-font text-center text-lg font-bold">
+                        <span class="text-blue-500">d₁</span> + <span class="text-emerald-500">d₂</span> = <span class="text-indigo-600">Constant</span>
+                    </p>
+                </div>
+            </div>
+
+            <div class="panel p-6">
+                <h2 class="text-xs font-bold uppercase tracking-widest text-slate-400 mb-4">Live Measurements</h2>
+                
+                <!-- D1 -->
+                <div class="mb-4">
+                    <div class="flex justify-between text-xs mb-1">
+                        <span class="text-blue-600 font-bold">Distance d₁ (to F1)</span>
+                        <span id="d1-val" class="math-font font-bold">0.00 cm</span>
+                    </div>
+                    <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                        <div id="d1-bar" class="h-full bg-blue-500 transition-all duration-75"></div>
+                    </div>
+                </div>
+
+                <!-- D2 -->
+                <div class="mb-6">
+                    <div class="flex justify-between text-xs mb-1">
+                        <span class="text-emerald-600 font-bold">Distance d₂ (to F2)</span>
+                        <span id="d2-val" class="math-font font-bold">0.00 cm</span>
+                    </div>
+                    <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                        <div id="d2-bar" class="h-full bg-emerald-500 transition-all duration-75"></div>
+                    </div>
+                </div>
+
+                <!-- Total -->
+                <div class="pt-4 border-t border-slate-100 text-center">
+                    <span class="text-[10px] uppercase font-black text-slate-400">The Combined Sum</span>
+                    <div id="total-val" class="text-3xl font-black text-indigo-600 math-font mt-1">0.00 cm</div>
+                    <p class="text-[10px] text-slate-400 mt-2">Notice: This number never changes!</p>
+                </div>
+            </div>
+
+            <div class="p-4 bg-indigo-600 rounded-xl text-white shadow-lg">
+                <h3 class="font-bold text-sm mb-1">Try This:</h3>
+                <p class="text-xs opacity-90 leading-relaxed">
+                    Drag the <span class="underline font-bold">Foci</span> (the blue/green dots) closer together. What happens to the shape? What if they are on top of each other?
+                </p>
+            </div>
+        </aside>
+
+        <!-- Canvas Area -->
+        <section class="lg:col-span-2">
+            <div class="canvas-container" id="container">
+                <canvas id="ellipseCanvas"></canvas>
+            </div>
+            <div class="mt-4 flex justify-between items-center text-[11px] text-slate-400 font-bold px-2 tracking-widest">
+                <span>DRAG F1 OR F2 TO MODIFY</span>
+                <span>DRAG RED POINT ALONG CURVE</span>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        const canvas = document.getElementById('ellipseCanvas');
+        const ctx = canvas.getContext('2d');
+        const container = document.getElementById('container');
+        
+        let width, height, centerX, centerY;
+        
+        // State
+        let f1 = { x: -100, y: 0 };
+        let f2 = { x: 100, y: 0 };
+        let majorAxis = 320; // The total length (d1 + d2)
+        let edgeAngle = -Math.PI / 4;
+        
+        let dragTarget = null;
+
+        function init() {
+            width = container.clientWidth;
+            height = Math.max(width * 0.6, 450);
+            canvas.width = width;
+            canvas.height = height;
+            centerX = width / 2;
+            centerY = height / 2;
+            draw();
+        }
+
+        function getMousePos(e) {
+            const rect = canvas.getBoundingClientRect();
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            return {
+                x: clientX - rect.left - centerX,
+                y: clientY - rect.top - centerY
+            };
+        }
+
+        canvas.onmousedown = canvas.ontouchstart = (e) => {
+            const pos = getMousePos(e);
+            
+            // Check for F1
+            if (Math.hypot(pos.x - f1.x, pos.y - f1.y) < 20) dragTarget = 'f1';
+            // Check for F2
+            else if (Math.hypot(pos.x - f2.x, pos.y - f2.y) < 20) dragTarget = 'f2';
+            // Check for edge point
+            else {
+                const ep = getEllipsePoint(edgeAngle);
+                if (Math.hypot(pos.x - ep.x, pos.y - ep.y) < 40) dragTarget = 'edge';
+            }
+        };
+
+        window.onmousemove = window.ontouchmove = (e) => {
+            if (!dragTarget) return;
+            const pos = getMousePos(e);
+
+            if (dragTarget === 'f1') {
+                f1.x = Math.max(-width/2 + 50, Math.min(f2.x - 5, pos.x));
+            } else if (dragTarget === 'f2') {
+                f2.x = Math.min(width/2 - 50, Math.max(f1.x + 5, pos.x));
+            } else if (dragTarget === 'edge') {
+                const midX = (f1.x + f2.x) / 2;
+                edgeAngle = Math.atan2(pos.y, pos.x - midX);
+            }
+
+            draw();
+            if (e.cancelable) e.preventDefault();
+        };
+
+        window.onmouseup = window.ontouchend = () => { dragTarget = null; };
+
+        function getEllipsePoint(angle) {
+            const c = Math.abs(f2.x - f1.x) / 2;
+            const a = majorAxis / 2;
+            const b = Math.sqrt(Math.max(0, a * a - c * c));
+            const midX = (f1.x + f2.x) / 2;
+            
+            return {
+                x: midX + a * Math.cos(angle),
+                y: b * Math.sin(angle)
+            };
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.save();
+            ctx.translate(centerX, centerY);
+
+            const midX = (f1.x + f2.x) / 2;
+            const c = Math.abs(f2.x - f1.x) / 2;
+            const a = majorAxis / 2;
+            const b = Math.sqrt(Math.max(0, a * a - c * c));
+            const ep = getEllipsePoint(edgeAngle);
+
+            // Calculations for UI
+            const d1 = Math.hypot(ep.x - f1.x, ep.y - f1.y);
+            const d2 = Math.hypot(ep.x - f2.x, ep.y - f2.y);
+            const total = d1 + d2;
+
+            // Draw full ellipse path
+            ctx.beginPath();
+            ctx.ellipse(midX, 0, a, b, 0, 0, Math.PI * 2);
+            ctx.strokeStyle = '#e2e8f0';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // Draw tension lines (The "String")
+            ctx.setLineDash([2, 2]);
+            ctx.lineWidth = 1.5;
+            
+            // Line d1
+            ctx.beginPath();
+            ctx.moveTo(f1.x, f1.y);
+            ctx.lineTo(ep.x, ep.y);
+            ctx.strokeStyle = '#3b82f6';
+            ctx.stroke();
+
+            // Line d2
+            ctx.beginPath();
+            ctx.moveTo(f2.x, f2.y);
+            ctx.lineTo(ep.x, ep.y);
+            ctx.strokeStyle = '#10b981';
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // Draw Foci
+            // F1
+            ctx.fillStyle = '#3b82f6';
+            ctx.beginPath(); ctx.arc(f1.x, f1.y, 8, 0, Math.PI*2); ctx.fill();
+            ctx.strokeStyle = 'white'; ctx.lineWidth = 2; ctx.stroke();
+            // F2
+            ctx.fillStyle = '#10b981';
+            ctx.beginPath(); ctx.arc(f2.x, f2.y, 8, 0, Math.PI*2); ctx.fill();
+            ctx.strokeStyle = 'white'; ctx.lineWidth = 2; ctx.stroke();
+
+            // Draw Active Point (The "Pen")
+            ctx.fillStyle = '#ef4444';
+            ctx.beginPath(); ctx.arc(ep.x, ep.y, 10, 0, Math.PI*2); ctx.fill();
+            ctx.strokeStyle = 'white'; ctx.lineWidth = 3; ctx.stroke();
+
+            // Draw Distance Labels on lines
+            ctx.font = "bold 10px JetBrains Mono";
+            ctx.fillStyle = "#1e293b";
+            ctx.textAlign = "center";
+            ctx.fillText("d1", (f1.x + ep.x)/2, (f1.y + ep.y)/2 - 10);
+            ctx.fillText("d2", (f2.x + ep.x)/2, (f2.y + ep.y)/2 - 10);
+
+            ctx.restore();
+            updateUI(d1, d2, total);
+        }
+
+        function updateUI(d1, d2, total) {
+            const scale = 20; // 20px = 1cm
+            
+            document.getElementById('d1-val').innerText = (d1 / scale).toFixed(2) + " cm";
+            document.getElementById('d2-val').innerText = (d2 / scale).toFixed(2) + " cm";
+            document.getElementById('total-val').innerText = (total / scale).toFixed(2) + " cm";
+
+            document.getElementById('d1-bar').style.width = (d1 / total * 100) + "%";
+            document.getElementById('d2-bar').style.width = (d2 / total * 100) + "%";
+        }
+
+        window.onload = init;
+        window.onresize = init;
+    </script>
+</body>
+</html>
